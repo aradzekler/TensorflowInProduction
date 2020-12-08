@@ -9,6 +9,8 @@ from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from keras_preprocessing.image import ImageDataGenerator
 import requests
 
+# https://www.tensorflow.org/tfx/tutorials/serving/rest_simple#import_the_fashion_mnist_dataset
+
 # Constants
 
 NUM_CLASSES = 10
@@ -41,7 +43,6 @@ train_data_generator = ImageDataGenerator(
 	vertical_flip=True,
 	fill_mode='nearest',
 	validation_split=0.2)
-
 
 # PLT Presentation
 W_grid = 4
@@ -87,7 +88,7 @@ model_ver = 1.0
 export_path = os.path.join(model_dir, str(model_ver))
 
 # will create a file checkpoint for our model, it will overwrite it every run until we will find the best model
-checkpoint = ModelCheckpoint(filepath=export_path+'\model',
+checkpoint = ModelCheckpoint(filepath=export_path + '\model',
                              monitor='val_loss',  # monitor our progress by loss value.
                              mode='min',  # smaller loss is better, we try to minimize it.
                              save_best_only=True,
@@ -111,7 +112,7 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss',
 callbacks = [checkpoint, earlystop, reduce_lr]
 
 # training the model.
-epochs = 10
+epochs = 1
 cnn = model()
 cnn.compile(loss='sparse_categorical_crossentropy',
             optimizer=tf.keras.optimizers.Adam(lr=0.001),
@@ -121,11 +122,13 @@ fashion_train = cnn.fit(X_train, y_train, epochs=epochs, callbacks=callbacks,
                         validation_split=0.2,
                         shuffle=True)
 
-
 # Using the model
 data = json.dumps({"signature-name": "serving-default", "instances": X_test[0:3].tolist()})
 headers = {'content-type': 'application-json'}
 json_response = requests.post("http://localhost:8501/v1/models/fashion_model:predict",
                               data=data,
                               headers=headers)
-#predictions =
+predictions = json.loads(json_response.txt)['predictions']
+
+plt.show(0, 'The model thought this was a {} (class {}), and it was actually a {} (class {})'.format(
+	class_names[np.argmax(predictions[0])], y_test[0], class_names[np.argmax(predictions[0])], y_test[0]))
